@@ -21,6 +21,7 @@ class PeripheralManager: NSObject {
     private var buffer = Data([])
     private var packet: (any BasePacket)?
     private var writeQueue: EversenseKitDispatchGroup?
+    private let writeSemaphore = DispatchSemaphore(value: 1)
     private var writeResponse: AnyObject?
 
     private let maxPacketSize: Int
@@ -45,8 +46,17 @@ class PeripheralManager: NSObject {
     }
 
     func write<T>(_ packet: any BasePacket, timeout: TimeInterval = .seconds(5)) throws -> T {
-        guard writeQueue == nil, let characteristic = requestCharacteristic else {
-            throw NSError(domain: "Command already running", code: 0)
+        // Wait until previous write calls have been completed
+        writeSemaphore.wait()
+
+        guard let characteristic = requestCharacteristic else {
+            logger.error("Not connected anymore...")
+            throw NSError(domain: "Not connected anymore...", code: 0, userInfo: nil)
+        }
+
+        defer {
+            writeSemaphore.signal()
+            writeResponse = nil
         }
 
         self.packet = packet
@@ -256,8 +266,12 @@ extension PeripheralManager: CBPeripheralDelegate {
         if actualData[0] == Eversense365.PacketIds.NotificationId.rawValue,
            actualData[1] == Eversense365.PushIds.AlarmWithData.rawValue
         {
-            let packet = Eversense365.PushAlarmWithDataPacket()
+            let packet = Eversense365.PushAlarmWithDataPacket(currentGlucose: cgmManager.state.recentGlucoseInMgDl ?? 0)
             let response = packet.parseResponse(data: actualData)
+            guard response.alarm.code != .unknown else {
+                logger.warning("[365] Received unknown alarm: \(response.alarm.codeRaw)")
+                return
+            }
 
             DispatchQueue.main.async {
                 self.cgmManager.state.activeAlarms = [response.alarm]

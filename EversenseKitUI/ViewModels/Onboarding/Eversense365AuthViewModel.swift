@@ -19,7 +19,6 @@ class Eversense365AuthViewModel: ObservableObject {
         Task {
             do {
                 let response = try await AuthenticationApi.login(username: username, password: password)
-                print(response.accessToken)
 
                 if let cgmManager = cgmManager {
                     cgmManager.state.username = username
@@ -30,6 +29,7 @@ class Eversense365AuthViewModel: ObservableObject {
                 }
 
                 await MainActor.run {
+                    self.isLoading = false
                     self.nextStep()
                 }
             } catch {

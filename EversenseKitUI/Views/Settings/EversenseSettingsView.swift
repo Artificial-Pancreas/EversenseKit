@@ -11,14 +11,14 @@ struct EversenseSettingsView: View {
 
     var removeCgmManagerActionSheet: ActionSheet {
         ActionSheet(
-            title: Text(LocalizedString("Remove CGM", comment: "Label for CgmManager deletion button")),
-            message: Text(LocalizedString(
+            title: Text("Remove CGM", comment: "Label for CgmManager deletion button"),
+            message: Text(
                 "Are you sure you want to stop using Eversense CGM?",
                 comment: "Message for CgmManager deletion action sheet"
-            )),
+            ),
             buttons: [
                 .destructive(
-                    Text(LocalizedString("Confirm", comment: "Confirmation label"))
+                    Text("Confirm", comment: "Confirmation label")
                 ) {
                     viewModel.deleteCgm()
                 },
@@ -46,7 +46,7 @@ struct EversenseSettingsView: View {
                     }
 
                     HStack(alignment: .bottom) {
-                        Text(LocalizedString("Next calibration in", comment: "Calibration hint"))
+                        Text("Next calibration in", comment: "Calibration hint")
                             .foregroundColor(.secondary)
                         Spacer()
                         calibarationTimer
@@ -70,26 +70,22 @@ struct EversenseSettingsView: View {
                 }
             }
 
-            Section(header: SectionHeader(label: LocalizedString(
-                "Recent glucose",
-                comment: "last reading"
-            ))) {
+            Section {
                 SectionItem(
-                    title: LocalizedString("Glucose", comment: "last reading"),
+                    title: Text("Glucose", comment: "last reading"),
                     value: displayGlucosePreference.format(viewModel.lastMeasurement)
                 )
                 SectionItem(
-                    title: LocalizedString("Time", comment: "last reading"),
+                    title: Text("Time", comment: "last reading"),
                     value: viewModel.lastMeasurementDatetime
                 )
+            } header: {
+                Text("Recent glucose", comment: "last reading")
             }
 
-            Section(header: SectionHeader(label: LocalizedString(
-                "Calibrations",
-                comment: "calibration section"
-            ))) {
+            Section {
                 HStack {
-                    Text(LocalizedString("Last calibration time", comment: "last calibration"))
+                    Text("Last calibration time", comment: "last calibration")
                     Spacer()
                     VStack(alignment: .trailing) {
                         Text(viewModel.lastCalibrationDate)
@@ -100,7 +96,7 @@ struct EversenseSettingsView: View {
                     }
                 }
                 HStack {
-                    Text(LocalizedString("Next calibration time", comment: "last calibration"))
+                    Text("Next calibration time", comment: "last calibration")
                     Spacer()
                     VStack(alignment: .trailing) {
                         Text(viewModel.nextCalibrationDate)
@@ -113,7 +109,7 @@ struct EversenseSettingsView: View {
                 if viewModel.allowCalibrations {
                     Button(action: { viewModel.toCalibration() }) {
                         HStack {
-                            Text(LocalizedString("Calibrate transmitter", comment: "calibration"))
+                            Text("Calibrate transmitter", comment: "calibration")
                             Spacer()
                             if viewModel.calibrationReadiness != .Ready {
                                 Text(viewModel.calibrationReadiness.description)
@@ -129,7 +125,7 @@ struct EversenseSettingsView: View {
                 }
                 Button(action: { viewModel.toCalibrationHistory() }) {
                     HStack {
-                        Text(LocalizedString("Calibration history", comment: "calibration"))
+                        Text("Calibration history", comment: "calibration")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: UIFont.systemFontSize, weight: .medium))
@@ -137,82 +133,84 @@ struct EversenseSettingsView: View {
                     }
                 }
                 .buttonStyle(PlainButtonStyle())
+            } header: {
+                Text("Calibrations", comment: "calibration section")
             }
 
-            Section(header: SectionHeader(label: LocalizedString(
-                "Transmitter information",
-                comment: "transmitter section"
-            ))) {
-                SectionItem(
-                    title: LocalizedString("Transmitter name", comment: "name"),
-                    value: viewModel.transmitterName
-                )
-                SectionItem(
-                    title: LocalizedString("Current phase", comment: "current phase"),
-                    value: viewModel.currentPhase
-                )
-                SectionItem(
-                    title: LocalizedString("Signal strength", comment: "transmitter implant signal strength"),
-                    value: viewModel.signalStrength
-                )
-                SectionItem(
-                    title: LocalizedString("Battery percentage", comment: "transmitter battery level"),
-                    value: viewModel.batteryLevel + "%"
-                )
-                HStack {
-                    Text(LocalizedString("Insertion date", comment: "insertiondate"))
-                    Spacer()
-                    VStack(alignment: .trailing) {
-                        Text(viewModel.insertionDate)
-                            .foregroundColor(.secondary)
-
-                        Text(viewModel.insertionTime)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                SectionItem(
-                    title: LocalizedString("Last sync", comment: "transmitter last sync"),
-                    value: viewModel.lastSync
-                )
-                Button(action: viewModel.toTransmitterSettings) {
+            Section {
+                Button(action: viewModel.toTransmitterInfo) {
                     HStack {
-                        Text(LocalizedString("Transmitter settings", comment: "go to transmitter settings"))
+                        Text("Transmitter information", comment: "go to transmitter info")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: UIFont.systemFontSize, weight: .medium))
                             .opacity(0.35)
                     }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: viewModel.toTransmitterSettings) {
+                    HStack {
+                        Text("Transmitter settings", comment: "go to transmitter settings")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: UIFont.systemFontSize, weight: .medium))
+                            .opacity(0.35)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: viewModel.toDMSSettings) {
+                    HStack {
+                        Text("DMS Settings", comment: "go to eversense dms settings")
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: UIFont.systemFontSize, weight: .medium))
+                            .opacity(0.35)
+                    }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 Button(action: { viewModel.toAlertHistory() }) {
                     HStack {
-                        Text(LocalizedString("Alert history", comment: "alerts"))
+                        Text("Alert history", comment: "alerts")
                         Spacer()
                         Image(systemName: "chevron.right")
                             .font(.system(size: UIFont.systemFontSize, weight: .medium))
                             .opacity(0.35)
                     }
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(PlainButtonStyle())
 
                 if #available(iOS 16.0, *) {
                     Button(action: viewModel.toPlacementGuide) {
                         HStack {
-                            Text(LocalizedString("Placement Guide", comment: "Title for placement guide"))
+                            Text("Placement Guide", comment: "Title for placement guide")
                             Spacer()
                             Image(systemName: "chevron.right")
                                 .font(.system(size: UIFont.systemFontSize, weight: .medium))
                                 .opacity(0.35)
                         }
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
+            } header: {
+                Text("Transmitter Settings", comment: "transmitter section")
             }
 
             Section {
-                Button(LocalizedString("Share Eversense logs", comment: "share logs")) {
-                    self.isSharePresented = true
+                SectionItem(
+                    title: Text("Last sync", comment: "transmitter last sync"),
+                    value: viewModel.lastSync
+                )
+
+                Button(action: { self.isSharePresented = true }) {
+                    Text("Share Eversense logs", comment: "share logs")
                 }
                 .sheet(isPresented: $isSharePresented, onDismiss: {}, content: {
                     ActivityViewController(activityItems: viewModel.getLogs())
@@ -220,7 +218,7 @@ struct EversenseSettingsView: View {
 
                 Button(action: viewModel.readGlucose) {
                     HStack {
-                        Text(LocalizedString("Force sync", comment: "force transmitter sync"))
+                        Text("Force sync", comment: "force transmitter sync")
                         Spacer()
                         if viewModel.forceSyncing {
                             ActivityIndicator(isAnimating: .constant(true), style: .medium)
@@ -232,7 +230,7 @@ struct EversenseSettingsView: View {
                 Button(action: {
                     viewModel.showingDeleteConfirmation = true
                 }) {
-                    Text(LocalizedString("Delete CGM", comment: "Label for CgmManager deletion button"))
+                    Text("Delete CGM", comment: "Label for CgmManager deletion button")
                         .foregroundColor(guidanceColors.critical)
                 }
                 .actionSheet(isPresented: $viewModel.showingDeleteConfirmation) {
@@ -241,13 +239,14 @@ struct EversenseSettingsView: View {
             }
         }
         .listStyle(InsetGroupedListStyle())
-        .navigationBarItems(trailing: Button(LocalizedString("Done", comment: "done button title"), action: dismiss))
-        .navigationBarTitle(viewModel.transmitterModel)
+        .navigationBarItems(trailing: Button(action: dismiss) {
+            Text("Done", comment: "done button title")
+        })
     }
 
     @ViewBuilder private var transmitterState: some View {
         VStack(alignment: .leading) {
-            Text(LocalizedString("State", comment: "Transmitter state"))
+            Text("State", comment: "Transmitter state")
                 .foregroundColor(Color(UIColor.secondaryLabel))
             Text(viewModel.connectionStatus)
                 .font(.title3)
@@ -258,7 +257,7 @@ struct EversenseSettingsView: View {
 
     @ViewBuilder private var transmitterBattery: some View {
         VStack(alignment: .trailing, spacing: 0) {
-            Text(LocalizedString("Battery", comment: "Transmitter name"))
+            Text("Battery", comment: "Transmitter name")
                 .foregroundColor(Color(UIColor.secondaryLabel))
             HStack(alignment: .center, spacing: 5) {
                 BatteryView(batteryLevel: viewModel.batteryPercentage)
@@ -271,7 +270,7 @@ struct EversenseSettingsView: View {
                         .fixedSize()
 
                     if viewModel.batteryPercentage <= 1 {
-                        Text("%")
+                        Text(String("%"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -284,31 +283,31 @@ struct EversenseSettingsView: View {
         HStack(alignment: .bottom, spacing: 10) {
             if viewModel.nextCalibrationDays > 0 {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text("\(viewModel.nextCalibrationDays, specifier: "%.0f")")
+                    Text(String(format: "%.0f", viewModel.nextCalibrationDays))
                         .font(.system(size: 28))
                         .fontWeight(.heavy)
                         .foregroundColor(.primary)
-                    Text(LocalizedString("d", comment: "day"))
+                    Text("d", comment: "day")
                         .foregroundColor(.secondary)
                 }
             }
             if viewModel.nextCalibrationHours > 0 {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text("\(viewModel.nextCalibrationHours, specifier: "%.0f")")
+                    Text(String(format: "%.0f", viewModel.nextCalibrationHours))
                         .font(.system(size: 28))
                         .fontWeight(.heavy)
                         .foregroundColor(.primary)
-                    Text(LocalizedString("h", comment: "hour"))
+                    Text("h", comment: "hour")
                         .foregroundColor(.secondary)
                 }
             }
             if viewModel.nextCalibrationDays == 0 {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
-                    Text("\(viewModel.nextCalibrationMinutes, specifier: "%.0f")")
+                    Text(String(format: "%.0f", viewModel.nextCalibrationMinutes))
                         .font(.system(size: 28))
                         .fontWeight(.heavy)
                         .foregroundColor(.primary)
-                    Text(LocalizedString("min", comment: "minute"))
+                    Text("min", comment: "minute")
                         .foregroundColor(.secondary)
                 }
             }
@@ -339,7 +338,7 @@ struct EversenseSettingsView: View {
                         .foregroundStyle(.primary)
 
                     if activeAlarm.code == .unknown {
-                        Text("\(activeAlarm.codeRaw)")
+                        Text(String(format: "%d", activeAlarm.codeRaw))
                             .font(.headline)
                             .foregroundStyle(.primary)
                     }
@@ -354,9 +353,10 @@ struct EversenseSettingsView: View {
         }
     }
 
-    private func SectionItem(title: String, value: String) -> some View {
+    private func SectionItem(title: Text, value: String) -> some View {
         HStack(alignment: .bottom) {
-            Text(title)
+            title
+                .foregroundColor(.primary)
             Spacer()
             Text(value)
                 .foregroundColor(.secondary)

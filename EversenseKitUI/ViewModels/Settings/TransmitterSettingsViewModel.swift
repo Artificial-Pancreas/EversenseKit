@@ -30,7 +30,7 @@ class TransmitterSettingsViewModel: ObservableObject {
     public let rateAllowedOptions: [Double] = (0 ..< 8).map { 1.5 + Double($0) * 0.5 }
     public let glucoseHighAllowedOptions: [Double] = (0 ... 110).map { Double($0 * 2 + 180) }
     public let glucoseLowAllowedOptions: [Double] = (0 ... 15).map { Double($0 * 2 + 40) }
-    public let timeAllowedOptions: [Double] = (5 ... 30).map { Double($0) }
+    public let timeAllowedOptions: [Double] = (5 ... 30).map { TimeInterval(minutes: Double($0)) }
     public let bleDisconnectAllowedOptions: [Double] = (1 ... 6).map { TimeInterval(minutes: Double($0 * 5)) }
     public let repeatLowAllowedOptions: [Double] = (1 ... 6).map { TimeInterval(minutes: Double($0 * 5)) }
     public let repeatHighAllowedOptions: [Double] = (1 ... 33).map { TimeInterval(minutes: Double($0 * 5 + 15)) }
@@ -87,54 +87,56 @@ class TransmitterSettingsViewModel: ObservableObject {
         loading = true
         error = ""
 
-        cgmManager.bluetoothManager.ensureConnected { error in
-            if let error = error {
+        DispatchQueue.global(qos: .userInitiated).async {
+            cgmManager.bluetoothManager.ensureConnected { error in
+                if let error = error {
+                    DispatchQueue.main.async {
+                        self.loading = false
+                        self.error = error.describe
+                    }
+                    return
+                }
+
+                guard let peripheralManager = cgmManager.bluetoothManager.peripheralManager else {
+                    return
+                }
+
+                let transmitterSettings = TransmitterSettings(
+                    vibrationMode: self.vibrationMode,
+
+                    glucoseHighEnabled: self.enableGlucoseHighAlerts,
+                    glucoseHighInMgDl: UInt16(self.glucoseHighInMgDl),
+                    glucoseLowInMgDl: UInt16(self.glucoseLowInMgDl),
+
+                    rateFallingEnabled: self.rateFallingEnabled,
+                    rateRisingEnabled: self.rateRisingEnabled,
+                    rateFallingThreshold: UInt8(self.rateFallingThreshold * 10),
+                    rateRisingThreshold: UInt8(self.rateRisingThreshold * 10),
+
+                    predictiveHighEnabled: self.predictionHighEnabled,
+                    predictiveHighThreshold: UInt16(self.predictionHighThreshold),
+                    predictiveHighTime: self.predictionHighTime,
+                    predictiveLowEnabled: self.predictionLowEnabled,
+                    predictiveLowThreshold: UInt16(self.predictionLowThreshold),
+                    predictiveLowTime: self.predictionLowTime,
+
+                    repeatAlarmLow: self.repeatLow,
+                    repeatAlarmHigh: self.repeatHigh,
+                    bleDisconnect: self.bleDisconnect
+                )
+
+                if !cgmManager.state.is365 {
+                    EversenseE3.writeTransmitterSettings(peripheralManager: peripheralManager, data: transmitterSettings)
+                    EversenseE3.fullSync(peripheralManager: peripheralManager, cgmManager: cgmManager)
+                } else {
+                    Eversense365.writeTransmitterSettings(peripheralManager: peripheralManager, data: transmitterSettings)
+                    Eversense365.fullSync(peripheralManager: peripheralManager, cgmManager: cgmManager)
+                }
+
                 DispatchQueue.main.async {
                     self.loading = false
-                    self.error = error.describe
+                    self.error = ""
                 }
-                return
-            }
-
-            guard let peripheralManager = cgmManager.bluetoothManager.peripheralManager else {
-                return
-            }
-
-            let transmitterSettings = TransmitterSettings(
-                vibrationMode: self.vibrationMode,
-
-                glucoseHighEnabled: self.enableGlucoseHighAlerts,
-                glucoseHighInMgDl: UInt16(self.glucoseHighInMgDl),
-                glucoseLowInMgDl: UInt16(self.glucoseLowInMgDl),
-
-                rateFallingEnabled: self.rateFallingEnabled,
-                rateRisingEnabled: self.rateRisingEnabled,
-                rateFallingThreshold: UInt8(self.rateFallingThreshold * 10),
-                rateRisingThreshold: UInt8(self.rateRisingThreshold * 10),
-
-                predictiveHighEnabled: self.predictionHighEnabled,
-                predictiveHighThreshold: UInt16(self.predictionHighThreshold),
-                predictiveHighTime: self.predictionHighTime,
-                predictiveLowEnabled: self.predictionLowEnabled,
-                predictiveLowThreshold: UInt16(self.predictionLowThreshold),
-                predictiveLowTime: self.predictionLowTime,
-
-                repeatAlarmLow: self.repeatLow,
-                repeatAlarmHigh: self.repeatHigh,
-                bleDisconnect: self.bleDisconnect
-            )
-
-            if !cgmManager.state.is365 {
-                EversenseE3.writeTransmitterSettings(peripheralManager: peripheralManager, data: transmitterSettings)
-                EversenseE3.fullSync(peripheralManager: peripheralManager, cgmManager: cgmManager)
-            } else {
-                Eversense365.writeTransmitterSettings(peripheralManager: peripheralManager, data: transmitterSettings)
-                Eversense365.fullSync(peripheralManager: peripheralManager, cgmManager: cgmManager)
-            }
-
-            DispatchQueue.main.async {
-                self.loading = false
-                self.error = ""
             }
         }
     }

@@ -31,13 +31,14 @@ class CalibrationViewModel: ObservableObject {
         error = ""
         isLoading = true
 
-        var glucose = glucose
-        if unit == .millimolesPerLiter {
-            let mgdl = HKQuantity(unit: unit, doubleValue: Double(glucose) / 10).doubleValue(for: .milligramsPerDeciliter)
-            glucose = UInt16(mgdl)
-        }
+        let glucose = getGlucose()
+        let time = self.time
 
-        Task {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else {
+                return
+            }
+
             do {
                 if cgmManager.state.is365 {
                     try Eversense365.calibrateSensors(cgmManager: cgmManager, glucoseInMgDl: glucose, timestamp: time)
@@ -45,19 +46,53 @@ class CalibrationViewModel: ObservableObject {
                     try EversenseE3.calibrateSensors(cgmManager: cgmManager, glucoseInMgDl: glucose, timestamp: time)
                 }
 
-                cgmManager.heartbeathOperation {}
+                if cgmManager.state.shouldUploadToEversenseDMS {
+                    self.startDMSUpload(cgmManager: cgmManager, glucose: glucose)
+                }
 
-                await MainActor.run {
-                    self.isLoading = false
-                    self.done()
+                // Allow Transmitter to process calibration
+                Thread.sleep(forTimeInterval: .seconds(2))
+
+                cgmManager.heartbeathOperation(force: true) {
+                    DispatchQueue.main.async {
+                        self.isLoading = false
+                        self.done()
+                    }
                 }
             } catch {
-                logger.error("Error during calibration: \(error)")
-
-                await MainActor.run {
+                self.logger.error("Error during calibration: \(error)")
+                DispatchQueue.main.async {
                     self.error = error.localizedDescription
                     self.isLoading = false
                 }
+            }
+        }
+    }
+
+    private func getGlucose() -> UInt16 {
+        if unit == .millimolesPerLiter {
+            let mgdl = HKQuantity(unit: unit, doubleValue: Double(glucose) / 10).doubleValue(for: .milligramsPerDeciliter)
+            return UInt16(mgdl)
+        } else {
+            return glucose
+        }
+    }
+
+    private func startDMSUpload(cgmManager: EversenseCGMManager, glucose: UInt16) {
+        Task {
+            if await DMSApi.uploadDeviceEvents(
+                cgmManager: cgmManager,
+                sensorId: cgmManager.state.sensorId,
+                readings: [],
+                calibrations: [
+                    CalibrationEvent(
+                        glucoseInMgDl: glucose,
+                        datetime: time
+                    )
+                ],
+                alerts: []
+            ) == false {
+                self.logger.warning("Failed to upload device events")
             }
         }
     }
